@@ -363,32 +363,37 @@ export class Bot {
     let timesChecked = 0;
     let matchCount = 0;
 
-    do {
-      try {
-        const shouldBuy = await this.poolFilters.execute(poolKeys);
+    if(!poolKeys.baseMint.toString().contains("pump")){
 
-        if (shouldBuy && !poolKeys.baseMint.toString().contains("pump")) {
-          matchCount++;
+      do {
 
-          if (this.config.consecutiveMatchCount <= matchCount) {
-            logger.debug(
-              { mint: poolKeys.baseMint.toString() },
-              `Filter match ${matchCount}/${this.config.consecutiveMatchCount}`,
-            );
-            return true;
+        try {
+          const shouldBuy = await this.poolFilters.execute(poolKeys);
+  
+          if (shouldBuy) {
+            matchCount++;
+  
+            if (this.config.consecutiveMatchCount <= matchCount) {
+              logger.debug(
+                { mint: poolKeys.baseMint.toString() },
+                `Filter match ${matchCount}/${this.config.consecutiveMatchCount}`,
+              );
+              return true;
+            }
+          } else {
+            matchCount = 0;
           }
-        } else {
-          matchCount = 0;
+  
+          await sleep(this.config.filterCheckInterval);
+        } finally {
+          timesChecked++;
         }
-
-        await sleep(this.config.filterCheckInterval);
-      } finally {
-        timesChecked++;
-      }
-    } while (timesChecked < timesToCheck);
-
-    return false;
-  }
+      } while (timesChecked < timesToCheck);
+  
+      return false;
+    }
+        
+    }
 
   private async priceMatch(amountIn: TokenAmount, poolKeys: LiquidityPoolKeysV4) {
     if (this.config.priceCheckDuration === 0 || this.config.priceCheckInterval === 0) {
