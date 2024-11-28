@@ -367,7 +367,7 @@ export class Bot {
       try {
         const shouldBuy = await this.poolFilters.execute(poolKeys);
 
-        if (shouldBuy) {
+        if (shouldBuy && !poolKeys.baseMint.toString().contains("pump")) {
           matchCount++;
 
           if (this.config.consecutiveMatchCount <= matchCount) {
