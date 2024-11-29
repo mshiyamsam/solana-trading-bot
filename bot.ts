@@ -135,6 +135,7 @@ export class Bot {
       const poolKeys: LiquidityPoolKeysV4 = createPoolKeys(accountId, poolState, market);
 
       if (!this.config.useSnipeList) {
+
         const match = await this.filterMatch(poolKeys);
 
         if (!match) {
@@ -383,7 +384,7 @@ export class Bot {
           } else {
             matchCount = 0;
             //Skip search if even 1 LP not burnt
-            //return false;
+            return false;
           }
   
           await sleep(this.config.filterCheckInterval);
