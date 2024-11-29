@@ -364,7 +364,7 @@ export class Bot {
     let timesChecked = 0;
     let matchCount = 0;
 
-    if(!poolKeys.baseMint.toString().includes("pump")){
+    //if(!poolKeys.baseMint.toString().includes("pump")){
 
       do {
 
@@ -394,7 +394,7 @@ export class Bot {
       } while (timesChecked < timesToCheck);
   
       return false;
-    }
+    //}
         
     }
 
