@@ -13,8 +13,6 @@ COPY .env ./.env
 # Install dependencies
 RUN npm install
 
-RUN npm audit fix
-
 # Copy the rest of the application code to the working directory
 COPY . .
 
