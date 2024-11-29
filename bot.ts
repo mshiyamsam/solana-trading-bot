@@ -227,7 +227,7 @@ export class Bot {
       const market = await this.marketStorage.get(poolData.state.marketId.toString());
       const poolKeys: LiquidityPoolKeysV4 = createPoolKeys(new PublicKey(poolData.id), poolData.state, market);
 
-      await this.priceMatch(tokenAmountIn, poolKeys);
+      //await this.priceMatch(tokenAmountIn, poolKeys);
 
       for (let i = 0; i < this.config.maxSellRetries; i++) {
         try {
@@ -382,6 +382,8 @@ export class Bot {
             }
           } else {
             matchCount = 0;
+            //Skip search if even 1 LP not burnt
+            //return false;
           }
   
           await sleep(this.config.filterCheckInterval);
