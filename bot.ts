@@ -309,7 +309,9 @@ export class Bot {
       slippage: slippagePercent,
     });
 
-    const latestBlockhash = await this.connection.getLatestBlockhash();
+    const latestBlockhash = await this.connection.getLatestBlockhashAndContext();
+    const lastValidBlockHeight = latestBlockhash.context.slot + 150;
+
     const { innerTransaction } = Liquidity.makeSwapFixedInInstruction(
       {
         poolKeys: poolKeys,
@@ -349,10 +351,24 @@ export class Bot {
       ],
     }).compileToV0Message();
 
+    const latestUpdatedBlockhash = await this.connection.getLatestBlockhashAndContext();
+    const lastValidUpdatedBlockHeight = latestBlockhash.context.slot + 150;
+
     const transaction = new VersionedTransaction(messageV0);
     transaction.sign([wallet, ...innerTransaction.signers]);
 
-    return this.txExecutor.executeAndConfirm(transaction, wallet, latestBlockhash);
+    const rawTransaction = transaction.serialize();
+    let blockheight = await this.connection.getBlockHeight();
+
+    while (blockheight < lastValidBlockHeight) {
+      this.connection.sendRawTransaction(rawTransaction, {
+        skipPreflight: true,
+      });
+      await sleep(500);
+      blockheight = await this.connection.getBlockHeight();
+    }
+
+    return this.txExecutor.executeAndConfirm(transaction, wallet, blockheight);
   }
 
   private async filterMatch(poolKeys: LiquidityPoolKeysV4) {
