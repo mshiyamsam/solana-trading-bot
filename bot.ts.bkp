@@ -228,7 +228,7 @@ export class Bot {
       const market = await this.marketStorage.get(poolData.state.marketId.toString());
       const poolKeys: LiquidityPoolKeysV4 = createPoolKeys(new PublicKey(poolData.id), poolData.state, market);
 
-      await this.priceMatch(tokenAmountIn, poolKeys);
+      //await this.priceMatch(tokenAmountIn, poolKeys);
 
       for (let i = 0; i < this.config.maxSellRetries; i++) {
         try {
@@ -437,11 +437,12 @@ export class Bot {
         if (amountOut.lt(stopLoss)) {
           break;
         }
-        else {
-          await sleep(15000);
+
+        if (amountOut.gt(takeProfit)) {
           break;
         }
 
+        await sleep(this.config.priceCheckInterval);
       } catch (e) {
         logger.trace({ mint: poolKeys.baseMint.toString(), e }, `Failed to check token price`);
       } finally {
