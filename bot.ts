@@ -198,6 +198,9 @@ export class Bot {
   }
 
   public async sell(accountId: PublicKey, rawAccount: RawAccount) {
+
+    var retryNow = false;
+
     if (this.config.oneTokenAtATime) {
       this.sellExecutionCount++;
     }
@@ -220,7 +223,7 @@ export class Bot {
         return;
       }
 
-      if (this.config.autoSellDelay > 0) {
+      if (this.config.autoSellDelay > 0 && !retryNow) {
         logger.debug({ mint: rawAccount.mint }, `Waiting for ${this.config.autoSellDelay} ms before sell`);
         await sleep(this.config.autoSellDelay);
       }
@@ -272,6 +275,7 @@ export class Bot {
           );
         } catch (error) {
           logger.debug({ mint: rawAccount.mint.toString(), error }, `Error confirming sell transaction`);
+          retryNow = true;
         }
       }
     } catch (error) {
@@ -309,9 +313,7 @@ export class Bot {
       slippage: slippagePercent,
     });
 
-    const latestBlockhash = await this.connection.getLatestBlockhashAndContext();
-    const lastValidBlockHeight = latestBlockhash.context.slot + 150;
-
+    const latestBlockhash = await this.connection.getLatestBlockhash();
     const { innerTransaction } = Liquidity.makeSwapFixedInInstruction(
       {
         poolKeys: poolKeys,
@@ -351,24 +353,10 @@ export class Bot {
       ],
     }).compileToV0Message();
 
-    const latestUpdatedBlockhash = await this.connection.getLatestBlockhashAndContext();
-    const lastValidUpdatedBlockHeight = latestBlockhash.context.slot + 150;
-
     const transaction = new VersionedTransaction(messageV0);
     transaction.sign([wallet, ...innerTransaction.signers]);
 
-    const rawTransaction = transaction.serialize();
-    let blockheight = await this.connection.getBlockHeight();
-
-    while (blockheight < lastValidBlockHeight) {
-      this.connection.sendRawTransaction(rawTransaction, {
-        skipPreflight: true,
-      });
-      await sleep(500);
-      blockheight = await this.connection.getBlockHeight();
-    }
-
-    return this.txExecutor.executeAndConfirm(transaction, wallet, blockheight);
+    return this.txExecutor.executeAndConfirm(transaction, wallet, latestBlockhash);
   }
 
   private async filterMatch(poolKeys: LiquidityPoolKeysV4) {
